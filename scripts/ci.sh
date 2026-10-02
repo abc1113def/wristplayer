@@ -46,13 +46,7 @@ sw_vers
 endgroup
 
 group "XcodeGen"
-if ! command -v xcodegen >/dev/null; then
-  curl -sSL -o /tmp/xcodegen.zip https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip
-  rm -rf /tmp/xcodegen && unzip -q /tmp/xcodegen.zip -d /tmp/xcodegen
-  XCODEGEN_BIN="$(find /tmp/xcodegen -type f -name xcodegen | head -1)"
-  chmod +x "$XCODEGEN_BIN"
-  export PATH="$(dirname "$XCODEGEN_BIN"):$PATH"
-fi
+export PATH="$(bash scripts/install_xcodegen.sh):$PATH"
 xcodegen --version
 xcodegen generate
 (cd "$ROOT" && zip -qr "$OUT/WristPlayer.xcodeproj.zip" WristPlayer.xcodeproj)

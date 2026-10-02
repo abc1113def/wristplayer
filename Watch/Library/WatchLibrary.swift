@@ -80,10 +80,8 @@ final class WatchLibrary {
     }
 
     var freeBytes: Int64? {
-        let values = try? songsDirectory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey,
-                                                                  .volumeAvailableCapacityKey])
-        if let important = values?.volumeAvailableCapacityForImportantUsage { return important }
-        return values?.volumeAvailableCapacity.map(Int64.init)
+        let attributes = try? FileManager.default.attributesOfFileSystem(forPath: songsDirectory.path)
+        return (attributes?[.systemFreeSize] as? NSNumber)?.int64Value
     }
 
     /// Отчёт для телефона: что лежит на часах.

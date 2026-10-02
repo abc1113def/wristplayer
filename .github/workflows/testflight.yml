@@ -1,0 +1,21 @@
+name: TestFlight
+
+# Запуск вручную: Actions → TestFlight → Run workflow.
+# Требует секреты репозитория — см. docs/INSTALL.md.
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive and upload to TestFlight
+        run: bash scripts/testflight.sh
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          APP_BUNDLE_ID: ${{ vars.APP_BUNDLE_ID }}
