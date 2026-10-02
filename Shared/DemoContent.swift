@@ -4,6 +4,9 @@ import Foundation
 enum DemoContent {
     static var isEnabled: Bool { ProcessInfo.processInfo.arguments.contains("-demo") }
 
+    /// Сквозной тест в CI: телефон сам добавляет несколько тоновых файлов и отправляет их на часы.
+    static var isEndToEndSeed: Bool { ProcessInfo.processInfo.arguments.contains("-e2eSeed") }
+
     /// Значение аргумента вида `-demoScreen nowPlaying`.
     static func argument(_ name: String) -> String? {
         let args = ProcessInfo.processInfo.arguments

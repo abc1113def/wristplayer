@@ -48,6 +48,9 @@ final class LibraryStore {
     @ObservationIgnored private let artworkCache = NSCache<NSString, UIImage>()
     @ObservationIgnored private var importQueue: [URL] = []
     @ObservationIgnored private var isImporting = false
+    @ObservationIgnored private var currentImport: URL?
+    /// Файлы из папки приложения, которые не удалось импортировать (чтобы не повторять ошибку при каждом открытии).
+    @ObservationIgnored private var rejectedDocuments: Set<URL> = []
 
     static let importableExtensions: Set<String> = [
         "mp3", "m4a", "aac", "m4b", "wav", "aif", "aiff", "aifc", "caf", "flac", "mp4",
@@ -160,11 +163,29 @@ final class LibraryStore {
         for dir in [documentsDirectory, documentsDirectory.appendingPathComponent("Inbox")] {
             guard let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.isDirectoryKey],
                                                           options: [.skipsHiddenFiles]) else { continue }
-            for url in items where Self.isImportable(url) && !importQueue.contains(url) {
+            for url in items where Self.isImportable(url) && !importQueue.contains(url)
+                && url != currentImport && !rejectedDocuments.contains(url) {
                 found.append(url)
             }
         }
         if !found.isEmpty { importFiles(found) }
+    }
+
+    /// Для сквозного теста в CI: добавляет три тоновых WAV-файла (они же проверяют перекодирование в AAC).
+    func seedForEndToEndTest() {
+        guard songs.isEmpty else { return }
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("e2e", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let urls = (1...3).compactMap { index -> URL? in
+            let url = dir.appendingPathComponent("E2E Artist - Tone \(index).wav")
+            do {
+                try DemoContent.writeTone(to: url, seconds: 5, frequency: 300 + Double(index) * 100)
+                return url
+            } catch {
+                return nil
+            }
+        }
+        importFiles(urls)
     }
 
     static func isImportable(_ url: URL) -> Bool {
@@ -178,6 +199,7 @@ final class LibraryStore {
         guard !isImporting, !importQueue.isEmpty else { return }
         isImporting = true
         let url = importQueue.removeFirst()
+        currentImport = url
         Task {
             let result = await Self.importFile(url, into: self.songsDirectory, artworkDirectory: self.artworkDirectory,
                                                documentsDirectory: self.documentsDirectory)
@@ -202,7 +224,9 @@ final class LibraryStore {
             }
         case .failure(let error):
             notice = error.message
+            rejectedDocuments.insert(source)
         }
+        currentImport = nil
         isImporting = false
         importingCount = importQueue.count
         processImportQueue()

@@ -4,6 +4,7 @@
 #
 # Переменные окружения:
 #   SCREENSHOTS=true   — снять скриншоты в симуляторах
+#   E2E=true           — сквозной тест: пара симуляторов iPhone + Watch, передача песен через WatchConnectivity
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -109,8 +110,75 @@ if [[ "${SCREENSHOTS:-false}" == "true" ]]; then
   done
   xcrun simctl spawn "$WATCH" log show --last 3m --predicate 'process == "WristPlayerWatch"' --style compact \
     > "$OUT/logs/watch-app.log" 2>&1
+  xcrun simctl shutdown "$WATCH"
+  # Самый маленький экран — проверить, что всё помещается.
+  SMALL="$(simulator 'Apple Watch SE 3 (40mm)' || simulator 'Apple Watch Series 11 (42mm)')"
+  if [[ -n "$SMALL" ]]; then
+    xcrun simctl boot "$SMALL" 2>/dev/null
+    xcrun simctl bootstatus "$SMALL" -b
+    xcrun simctl install "$SMALL" "$WATCH_APP"
+    for screen in library nowPlaying; do
+      xcrun simctl terminate "$SMALL" "$WATCH_ID" 2>/dev/null
+      xcrun simctl launch "$SMALL" "$WATCH_ID" -demo -demoScreen "$screen"
+      sleep 8
+      xcrun simctl io "$SMALL" screenshot "$OUT/screenshots/watch-small-$screen.png"
+    done
+    xcrun simctl shutdown "$SMALL"
+  fi
   endgroup
   set -e
+fi
+
+if [[ "${E2E:-false}" == "true" ]]; then
+  set +e
+  group "Сквозной тест: iPhone → Watch"
+  runtime() {
+    xcrun simctl list runtimes available -j | python3 -c '
+import json, sys
+platform = sys.argv[1]
+rts = [r for r in json.load(sys.stdin)["runtimes"] if r.get("platform") == platform and r.get("isAvailable")]
+rts.sort(key=lambda r: [int(x) for x in r["version"].split(".")])
+print(rts[-1]["identifier"])' "$1"
+  }
+  PHONE_RT="$(runtime iOS)"; WATCH_RT="$(runtime watchOS)"
+  echo "runtimes: $PHONE_RT / $WATCH_RT"
+  E2E_PHONE="$(xcrun simctl create 'E2E iPhone' 'iPhone 17' "$PHONE_RT")"
+  E2E_WATCH="$(xcrun simctl create 'E2E Watch' 'Apple Watch Series 11 (46mm)' "$WATCH_RT")"
+  PAIR="$(xcrun simctl pair "$E2E_WATCH" "$E2E_PHONE")"
+  echo "phone=$E2E_PHONE watch=$E2E_WATCH pair=$PAIR"
+  xcrun simctl boot "$E2E_PHONE"; xcrun simctl boot "$E2E_WATCH"
+  xcrun simctl bootstatus "$E2E_PHONE" -b; xcrun simctl bootstatus "$E2E_WATCH" -b
+  xcrun simctl pair_activate "$PAIR"
+  xcrun simctl list pairs
+  xcrun simctl install "$E2E_WATCH" "$WATCH_APP"
+  xcrun simctl install "$E2E_PHONE" "$IOS_APP"
+  xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
+  sleep 5
+  xcrun simctl launch "$E2E_PHONE" "$APP_ID" -e2eSeed
+  WATCH_DATA="$(xcrun simctl get_app_container "$E2E_WATCH" "$WATCH_ID" data)"
+  COUNT=0
+  for i in $(seq 1 24); do
+    sleep 10
+    COUNT="$(ls "$WATCH_DATA/Documents/Songs" 2>/dev/null | wc -l | tr -d ' ')"
+    echo "t=$((i * 10))s: песен на часах: $COUNT"
+    [[ "$COUNT" -ge 3 ]] && break
+  done
+  ls -la "$WATCH_DATA/Documents/Songs" 2>&1
+  cat "$WATCH_DATA/Documents/library.json" 2>&1 | head -c 2000; echo
+  xcrun simctl io "$E2E_PHONE" screenshot "$OUT/screenshots/e2e-iphone.png"
+  xcrun simctl io "$E2E_WATCH" screenshot "$OUT/screenshots/e2e-watch.png"
+  xcrun simctl spawn "$E2E_PHONE" log show --last 5m --style compact \
+    --predicate 'process == "WristPlayer" OR subsystem CONTAINS "WatchConnectivity" OR process == "companionappd"' \
+    > "$OUT/logs/e2e-phone.log" 2>&1
+  xcrun simctl spawn "$E2E_WATCH" log show --last 5m --style compact \
+    --predicate 'process == "WristPlayerWatch" OR subsystem CONTAINS "WatchConnectivity"' \
+    > "$OUT/logs/e2e-watch.log" 2>&1
+  echo "E2E_RESULT=$COUNT" | tee "$OUT/e2e-result.txt"
+  endgroup
+  set -e
+  if [[ "${COUNT:-0}" -lt 3 ]]; then
+    echo "::warning::Сквозной тест: на часы пришло $COUNT из 3 песен"
+  fi
 fi
 
 echo "Готово."

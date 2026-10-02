@@ -10,6 +10,10 @@ on:
         description: "Снять скриншоты в симуляторах"
         type: boolean
         default: true
+      e2e:
+        description: "Сквозной тест передачи песен iPhone → Watch"
+        type: boolean
+        default: false
 
 concurrency:
   group: build-${{ github.ref }}
@@ -26,6 +30,7 @@ jobs:
         run: bash scripts/ci.sh
         env:
           SCREENSHOTS: ${{ (github.event_name == 'workflow_dispatch' && inputs.screenshots) || contains(github.event.head_commit.message, '[screens]') }}
+          E2E: ${{ (github.event_name == 'workflow_dispatch' && inputs.e2e) || contains(github.event.head_commit.message, '[e2e]') }}
 
       - name: Upload results
         if: always()

@@ -9,6 +9,9 @@ struct WristPlayerApp: App {
 
     init() {
         PhoneSyncManager.shared.activate()
+        if DemoContent.isEndToEndSeed {
+            LibraryStore.shared.seedForEndToEndTest()
+        }
     }
 
     var body: some Scene {
