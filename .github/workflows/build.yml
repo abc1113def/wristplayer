@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+    inputs:
+      screenshots:
+        description: "Снять скриншоты в симуляторах"
+        type: boolean
+        default: true
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build, test, screenshots
+        run: bash scripts/ci.sh
+        env:
+          SCREENSHOTS: ${{ (github.event_name == 'workflow_dispatch' && inputs.screenshots) || contains(github.event.head_commit.message, '[screens]') }}
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wristplayer-ci
+          path: build/out
+          retention-days: 7
+          if-no-files-found: ignore

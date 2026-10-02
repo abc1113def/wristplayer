@@ -1,0 +1,8 @@
+# Сгенерированный XcodeGen проект (создаётся командой `xcodegen generate`)
+WristPlayer.xcodeproj/
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+.DS_Store
+__pycache__/
