@@ -58,7 +58,10 @@ xcb build-ios build \
   -project WristPlayer.xcodeproj -scheme WristPlayer -configuration Debug \
   -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath "$DERIVED" \
-  CODE_SIGNING_ALLOWED=NO
+  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER=
+# Подпись «Sign to Run Locally», как в Xcode: без неё WatchConnectivity в симуляторе
+# не связывает iPhone-приложение с приложением на часах.
+codesign -d --entitlements - "$DERIVED/Build/Products/Debug-iphonesimulator/WristPlayer.app" 2>&1 | head -20 || true
 IOS_APP="$DERIVED/Build/Products/Debug-iphonesimulator/WristPlayer.app"
 WATCH_APP="$DERIVED/Build/Products/Debug-watchsimulator/WristPlayerWatch.app"
 test -d "$IOS_APP" || { echo "::error::нет $IOS_APP"; exit 1; }
@@ -129,72 +132,7 @@ if [[ "${SCREENSHOTS:-false}" == "true" ]]; then
 fi
 
 if [[ "${E2E:-false}" == "true" ]]; then
-  set +e
-  group "Сквозной тест: iPhone → Watch"
-  # Берём уже загруженные симуляторы (первая загрузка нового симулятора занимает до 15 минут).
-  E2E_PHONE="$IPHONE"
-  E2E_WATCH="${WATCH:-$(simulator 'Apple Watch Series 11 (46mm)' || simulator 'Apple Watch')}"
-  echo "phone=$E2E_PHONE watch=$E2E_WATCH"
-  # Снимаем существующие пары с этими устройствами и создаём свою.
-  xcrun simctl list pairs -j | python3 -c '
-import json, sys
-phone, watch = sys.argv[1], sys.argv[2]
-for pid, p in json.load(sys.stdin)["pairs"].items():
-    if p["watch"]["udid"] in (phone, watch) or p["phone"]["udid"] in (phone, watch):
-        print(pid)' "$E2E_PHONE" "$E2E_WATCH" | while read -r old; do xcrun simctl unpair "$old"; done
-  xcrun simctl uninstall "$E2E_PHONE" "$APP_ID" 2>/dev/null
-  xcrun simctl boot "$E2E_WATCH" 2>/dev/null
-  xcrun simctl uninstall "$E2E_WATCH" "$WATCH_ID" 2>/dev/null
-  PAIR="$(xcrun simctl pair "$E2E_WATCH" "$E2E_PHONE")"
-  echo "pair=$PAIR"
-  xcrun simctl boot "$E2E_PHONE" 2>/dev/null
-  xcrun simctl bootstatus "$E2E_PHONE" -b; xcrun simctl bootstatus "$E2E_WATCH" -b
-  xcrun simctl pair_activate "$PAIR"
-  # Сначала iPhone-приложение (как при установке из App Store), затем — часы.
-  xcrun simctl install "$E2E_PHONE" "$IOS_APP"
-  sleep 20
-  if xcrun simctl listapps "$E2E_WATCH" | grep -q "$WATCH_ID"; then
-    echo "watch-приложение установлено через iPhone"
-  else
-    echo "watch-приложение ставлю напрямую"
-    xcrun simctl install "$E2E_WATCH" "$WATCH_APP"
-  fi
-  # Перезагрузка пары, чтобы WatchConnectivity увидел установленные приложения.
-  xcrun simctl shutdown "$E2E_WATCH"; xcrun simctl shutdown "$E2E_PHONE"
-  xcrun simctl boot "$E2E_PHONE"; xcrun simctl boot "$E2E_WATCH"
-  xcrun simctl bootstatus "$E2E_PHONE" -b; xcrun simctl bootstatus "$E2E_WATCH" -b
-  xcrun simctl list pairs
-  xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
-  sleep 10
-  xcrun simctl launch "$E2E_PHONE" "$APP_ID" -e2eSeed
-  WATCH_DATA="$(xcrun simctl get_app_container "$E2E_WATCH" "$WATCH_ID" data)"
-  COUNT=0
-  for i in $(seq 1 18); do
-    sleep 10
-    COUNT="$(ls "$WATCH_DATA/Documents/Songs" 2>/dev/null | wc -l | tr -d ' ')"
-    echo "t=$((i * 10))s: песен на часах: $COUNT"
-    [[ "$COUNT" -ge 3 ]] && break
-  done
-  ls -la "$WATCH_DATA/Documents/Songs" 2>&1
-  head -c 2000 "$WATCH_DATA/Documents/library.json" 2>&1; echo
-  # Перезапуск часов — проверить, что библиотека сохраняется.
-  xcrun simctl terminate "$E2E_WATCH" "$WATCH_ID"
-  xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
-  sleep 6
-  xcrun simctl io "$E2E_PHONE" screenshot "$OUT/screenshots/e2e-iphone.png"
-  xcrun simctl io "$E2E_WATCH" screenshot "$OUT/screenshots/e2e-watch.png"
-  xcrun simctl spawn "$E2E_PHONE" log show --last 5m --style compact \
-    --predicate 'process == "WristPlayer" AND (subsystem == "com.apple.wcd" OR eventMessage CONTAINS "WristPlayer")' \
-    > "$OUT/logs/e2e-phone.log" 2>&1
-  xcrun simctl spawn "$E2E_WATCH" log show --last 5m --style compact \
-    --predicate 'process CONTAINS "WristPlayer"' \
-    > "$OUT/logs/e2e-watch.log" 2>&1
-  echo "E2E_RESULT=$COUNT" | tee "$OUT/e2e-result.txt"
-  endgroup
-  set -e
-  if [[ "${COUNT:-0}" -lt 3 ]]; then
-    echo "::warning::Сквозной тест: на часы пришло $COUNT из 3 песен"
-  fi
+  source "$ROOT/scripts/e2e.sh"
 fi
 
 echo "Готово."

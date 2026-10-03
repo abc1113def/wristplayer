@@ -33,7 +33,7 @@ iOS- и watchOS-приложения можно подписать и устан
 4. Запишите **Key ID** (в таблице ключей) и **Issuer ID** (над таблицей).
 
 ### 3. Секреты в GitHub
-Репозиторий <https://github.com/abc1113def/wrist-player> → **Settings** → **Secrets and variables** → **Actions** →
+Репозиторий <https://github.com/abc1113def/wristplayer> → **Settings** → **Secrets and variables** → **Actions** →
 **New repository secret**. Добавьте четыре секрета:
 
 | Имя | Значение |
@@ -70,6 +70,8 @@ iOS- и watchOS-приложения можно подписать и устан
 
 ## Вариант B — Mac 2012 через OpenCore Legacy Patcher
 
+> Подробная пошаговая инструкция с проверкой Mac и рисками — [MAC_SETUP.md](MAC_SETUP.md).
+
 ### Сначала узнайте модель Mac
 Меню  (яблоко в левом верхнем углу) → **Об этом Mac**. Там написано, например,
 «MacBook Pro (Retina, 13-inch, Late 2012)», «iMac (21.5-inch, Late 2012)» или «Mac mini (Late 2012)», а также
@@ -97,8 +99,7 @@ iOS 18 SDK и Swift-макросы (нужен Xcode 16+), а для часов 
    согласитесь с лицензией, поставьте компоненты iOS и watchOS, добавьте Apple ID: **Xcode → Settings → Accounts**.
 3. На iPhone включите **Режим разработчика**: Настройки → Конфиденциальность и безопасность → Режим разработчика
    (после перезагрузки подтвердите). Подключите iPhone кабелем к Mac, нажмите «Доверять».
-4. Скачайте проект: <https://github.com/abc1113def/wrist-player> → **Code** → **Download ZIP**, распакуйте.
-   (Пока репозиторий приватный, войдите на GitHub под своим аккаунтом.)
+4. Скачайте проект: <https://github.com/abc1113def/wristplayer/archive/refs/heads/main.zip> и распакуйте.
 5. В Терминале перейдите в папку проекта и запустите:
    ```bash
    bash scripts/mac-install.sh
