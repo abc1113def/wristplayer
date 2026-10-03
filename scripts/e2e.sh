@@ -58,7 +58,17 @@ sleep 15
 xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
 sleep 10
 xcrun simctl launch "$E2E_PHONE" "$APP_ID"
-wait_for_songs 42
+if ! wait_for_songs 30; then
+  # Возможно, файлы ждут в системной очереди часов: при запуске приложения они доставляются заново.
+  echo "Перезапуск приложения на часах"
+  xcrun simctl terminate "$E2E_WATCH" "$WATCH_ID"
+  sleep 3
+  xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
+  wait_for_songs 9
+fi
+echo "Аудиофайлы в данных часов:"
+find "$(dirname "$(dirname "$WATCH_DATA")")" "$WATCH_DATA" -name "*.m4a" 2>/dev/null | head -20
+find "$(xcrun simctl getenv "$E2E_WATCH" HOME 2>/dev/null || echo /nonexistent)" -name "*.m4a" -newer "$WATCH_APP" 2>/dev/null | head -20
 
 ls -la "$WATCH_DATA/Documents/Songs" 2>&1
 head -c 2000 "$WATCH_DATA/Documents/library.json" 2>&1
