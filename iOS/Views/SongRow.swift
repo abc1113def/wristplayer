@@ -43,8 +43,9 @@ struct SongRow: View {
         }
     }
 
+    /// «Исполнитель · 3:45» — длительность не обрезается длинным названием альбома.
     private var subtitle: String {
-        let parts = [song.meta.subtitle, Format.duration(song.meta.duration)].filter { !$0.isEmpty }
+        let parts = [song.meta.artist ?? "", Format.duration(song.meta.duration)].filter { !$0.isEmpty }
         return parts.joined(separator: " · ")
     }
 }
@@ -57,17 +58,11 @@ struct SyncStatusLine: View {
         case .off:
             EmptyView()
         case .onWatch:
-            Label("На часах", systemImage: "checkmark.circle.fill")
-                .font(.caption)
-                .foregroundStyle(.green)
+            StatusText(icon: "checkmark.circle.fill", text: "На часах", color: .green)
         case .waiting:
-            Label("Ожидает отправки", systemImage: "clock")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            StatusText(icon: "clock", text: "Ожидает отправки", color: .secondary)
         case .preparing:
-            Label("Подготовка…", systemImage: "waveform")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            StatusText(icon: "waveform", text: "Подготовка…", color: .secondary)
         case .transferring(let value):
             HStack(spacing: 6) {
                 ProgressView(value: value)
@@ -77,11 +72,24 @@ struct SyncStatusLine: View {
                     .foregroundStyle(.secondary)
             }
         case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle.fill")
-                .font(.caption)
-                .foregroundStyle(.red)
+            StatusText(icon: "exclamationmark.triangle.fill", text: message, color: .red)
+        }
+    }
+}
+
+private struct StatusText: View {
+    let icon: String
+    let text: String
+    let color: Color
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            Image(systemName: icon)
+            Text(text)
                 .lineLimit(2)
         }
+        .font(.caption)
+        .foregroundStyle(color)
     }
 }
 

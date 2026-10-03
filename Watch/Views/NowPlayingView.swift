@@ -48,12 +48,12 @@ struct NowPlayingView: View {
 
     @ViewBuilder
     private func content(for song: SongMeta) -> some View {
-        VStack(spacing: 6) {
-            VStack(spacing: 1) {
+        VStack(spacing: 4) {
+            VStack(spacing: 0) {
                 Text(song.title)
                     .font(.headline)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                     .multilineTextAlignment(.center)
                 if let artist = song.artist, !artist.isEmpty {
                     Text(artist)
@@ -65,8 +65,17 @@ struct NowPlayingView: View {
             .frame(maxWidth: .infinity)
 
             VStack(spacing: 2) {
-                ProgressView(value: progress)
-                    .tint(.accentColor)
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Color.secondary.opacity(0.3))
+                        Capsule().fill(Color.accentColor)
+                            .frame(width: proxy.size.width * progress)
+                    }
+                }
+                .frame(height: 4)
+                .accessibilityElement()
+                .accessibilityLabel("Прогресс")
+                .accessibilityValue("\(Int(progress * 100))%")
                 HStack {
                     Text(Format.duration(player.currentTime))
                     Spacer()
@@ -77,7 +86,7 @@ struct NowPlayingView: View {
             }
 
             HStack {
-                ControlButton(systemImage: "backward.fill", size: 20, label: "Назад") {
+                ControlButton(systemImage: "backward.fill", size: 18, label: "Назад") {
                     player.previous()
                 }
                 Spacer()
@@ -91,29 +100,29 @@ struct NowPlayingView: View {
                             ProgressView()
                         } else {
                             Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                                .font(.system(size: 24, weight: .bold))
+                                .font(.system(size: 22, weight: .bold))
                                 .foregroundStyle(.white)
                         }
                     }
-                    .frame(width: 54, height: 54)
+                    .frame(width: 48, height: 48)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(player.isPlaying ? "Пауза" : "Играть")
                 Spacer()
-                ControlButton(systemImage: "forward.fill", size: 20, label: "Вперёд") {
+                ControlButton(systemImage: "forward.fill", size: 18, label: "Вперёд") {
                     player.next()
                 }
             }
 
             HStack {
-                ControlButton(systemImage: "shuffle", size: 14, label: "Перемешать",
+                ControlButton(systemImage: "shuffle", size: 13, label: "Перемешать",
                               isActive: player.queue.isShuffled) {
                     player.toggleShuffle()
                 }
                 Spacer()
                 VolumeIndicator(volume: player.volume)
                 Spacer()
-                ControlButton(systemImage: player.queue.repeatMode == .one ? "repeat.1" : "repeat", size: 14,
+                ControlButton(systemImage: player.queue.repeatMode == .one ? "repeat.1" : "repeat", size: 13,
                               label: "Повтор", isActive: player.queue.repeatMode != .off) {
                     player.cycleRepeat()
                 }
@@ -147,7 +156,7 @@ private struct ControlButton: View {
             Image(systemName: systemImage)
                 .font(.system(size: size, weight: .semibold))
                 .foregroundStyle(isActive ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
-                .frame(width: size * 2 + 8, height: size * 2 + 8)
+                .frame(width: size * 2 + 4, height: size * 2 + 4)
                 .background {
                     if isActive {
                         Circle().fill(Color.accentColor.opacity(0.2))
