@@ -44,23 +44,21 @@ wait_for_songs() {
 }
 
 COUNT=0
+# Первый запуск iPhone-приложения: оно добавляет три тестовые песни в библиотеку.
+xcrun simctl launch "$E2E_PHONE" "$APP_ID" -e2eSeed
+sleep 15
+# WatchConnectivity в симуляторе замечает установленное приложение на часах только после перезагрузки пары.
+xcrun simctl shutdown "$E2E_WATCH"
+xcrun simctl shutdown "$E2E_PHONE"
+xcrun simctl boot "$E2E_PHONE"
+xcrun simctl boot "$E2E_WATCH"
+xcrun simctl bootstatus "$E2E_PHONE" -b
+xcrun simctl bootstatus "$E2E_WATCH" -b
+sleep 15
 xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
 sleep 10
-xcrun simctl launch "$E2E_PHONE" "$APP_ID" -e2eSeed
-if ! wait_for_songs 12; then
-  echo "Попытка 2: перезагрузка пары"
-  xcrun simctl shutdown "$E2E_WATCH"
-  xcrun simctl shutdown "$E2E_PHONE"
-  xcrun simctl boot "$E2E_PHONE"
-  xcrun simctl boot "$E2E_WATCH"
-  xcrun simctl bootstatus "$E2E_PHONE" -b
-  xcrun simctl bootstatus "$E2E_WATCH" -b
-  sleep 15
-  xcrun simctl launch "$E2E_WATCH" "$WATCH_ID"
-  sleep 10
-  xcrun simctl launch "$E2E_PHONE" "$APP_ID"
-  wait_for_songs 12
-fi
+xcrun simctl launch "$E2E_PHONE" "$APP_ID"
+wait_for_songs 42
 
 ls -la "$WATCH_DATA/Documents/Songs" 2>&1
 head -c 2000 "$WATCH_DATA/Documents/library.json" 2>&1
