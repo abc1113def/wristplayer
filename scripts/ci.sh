@@ -4,6 +4,7 @@
 #
 # Переменные окружения:
 #   SCREENSHOTS=true   — снять скриншоты в симуляторах
+#   BUILD_ONLY=true    — только сборка, без тестов и скриншотов
 #   E2E=true           — сквозной тест: пара симуляторов iPhone + Watch, передача песен через WatchConnectivity
 set -euo pipefail
 
@@ -69,6 +70,19 @@ test -d "$WATCH_APP" || { echo "::error::нет $WATCH_APP"; exit 1; }
 test -d "$IOS_APP/Watch/WristPlayerWatch.app" || { echo "::error::watch-приложение не встроено в iOS-приложение"; exit 1; }
 plutil -p "$WATCH_APP/Info.plist" | grep -E "WKApplication|WKCompanionAppBundleIdentifier|UIBackgroundModes" -A2 || true
 endgroup
+
+if [[ "${BUILD_ONLY:-false}" == "true" ]]; then
+  # То же, что соберёт scripts/mac-install.sh на реальном устройстве (без подписи).
+  group "Сборка для iPhone (Release, устройство)"
+  xcb build-device build \
+    -project WristPlayer.xcodeproj -scheme WristPlayer -configuration Release \
+    -destination 'generic/platform=iOS' \
+    -derivedDataPath "$DERIVED" \
+    CODE_SIGNING_ALLOWED=NO
+  endgroup
+  echo "Только сборка (BUILD_ONLY=true). Готово."
+  exit 0
+fi
 
 IPHONE="$(simulator 'iPhone 17' || simulator 'iPhone')"
 echo "iPhone simulator: $IPHONE"

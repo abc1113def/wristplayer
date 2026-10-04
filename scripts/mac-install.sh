@@ -2,7 +2,7 @@
 # Установка WristPlayer на iPhone и Apple Watch с Mac (бесплатный Apple ID подходит).
 #
 # Что нужно заранее:
-#   1. macOS 15.6+ и Xcode 26+ (на старом Mac — через OpenCore Legacy Patcher, см. docs/INSTALL.md).
+#   1. macOS 15.6+ и Xcode 26+ (на iMac 2013 — macOS Sequoia через OpenCore Legacy Patcher и Xcode 26.3, см. docs/MAC_SETUP.md).
 #   2. В Xcode → Settings → Accounts добавлен ваш Apple ID.
 #   3. iPhone подключён кабелем, разблокирован, нажато «Доверять»; на iPhone включён Режим разработчика.
 #

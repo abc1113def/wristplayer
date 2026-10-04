@@ -23,8 +23,8 @@
 - Sideloadly, AltStore и xtool с Windows ставят только iPhone-часть: приложение для часов они не подписывают.
 - Рабочие пути описаны в [docs/INSTALL.md](docs/INSTALL.md):
   - **TestFlight** — $99/год, Mac не нужен, всё уже настроено, нужно только добавить ключи;
-  - **старый Mac** — через OpenCore Legacy Patcher и Xcode 26, затем `bash scripts/mac-install.sh`;
-    нужна модель Mac: меню  → «Об этом Mac».
+  - **iMac 21.5" Late 2013** (iMac14,3) — поддерживается OpenCore Legacy Patcher → macOS Sequoia → Xcode 26.3
+    (последний для Sequoia; по данным Apple ставит на iOS 15+, т.е. и на iOS 27), затем `bash scripts/mac-install.sh`.
 
 ## Репозиторий
 - Публичный: <https://github.com/abc1113def/wristplayer>. В истории коммитов личный адрес почты заменён
@@ -33,5 +33,5 @@
   и старых коммитах ещё есть прежний адрес. Если он не нужен, удали его: Settings → Danger Zone → Delete this repository.
 
 ## Установка
-Выбран путь через старый Mac: [docs/MAC_SETUP.md](docs/MAC_SETUP.md). Первый шаг — посмотреть модель,
-объём памяти и свободное место (меню  → «Об этом Mac») и прислать мне.
+Выбран путь через iMac Late 2013: [docs/MAC_SETUP.md](docs/MAC_SETUP.md). Осталось проверить память (нужно 8 ГБ)
+и свободное место (60 ГБ) и пройти шаги инструкции.

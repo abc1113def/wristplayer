@@ -40,3 +40,25 @@ jobs:
           path: build/out
           retention-days: 7
           if-no-files-found: ignore
+
+  # Xcode 26.3 — последний, что работает на macOS Sequoia (iMac 2013 через OpenCore Legacy Patcher).
+  xcode-26-3:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with Xcode 26.3 (simulator + device)
+        run: bash scripts/ci.sh
+        env:
+          DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+          BUILD_ONLY: "true"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcode-26-3-logs
+          path: build/out/logs
+          retention-days: 7
+          if-no-files-found: ignore
